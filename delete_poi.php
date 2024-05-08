@@ -8,17 +8,22 @@ if ($mysqli->connect_error) {
     die("Koneksi ke database gagal: " . $mysqli->connect_error);
 }
 
-// Ambil id POI dari permintaan POST
-$id = $_POST['id'];
+// Periksa apakah parameter $_POST['id'] telah diset
+if (isset($_POST['id'])) {
+    // Ambil id POI dari permintaan POST
+    $id = $mysqli->real_escape_string($_POST['id']); // Mengamankan input dari serangan SQL Injection
 
-// Query untuk menghapus data POI dari database
-$query = "DELETE FROM poi WHERE id = $id";
+    // Query untuk menghapus data POI dari database
+    $query = "DELETE FROM poi WHERE id = $id";
 
-// Eksekusi query
-if ($mysqli->query($query) === true) {
-    echo "Data POI berhasil dihapus";
+    // Eksekusi query
+    if ($mysqli->query($query) === true) {
+        echo "success";
+    } else {
+        echo "Error: " . $query . "<br>" . $mysqli->error;
+    }
 } else {
-    echo "Error: " . $query . "<br>" . $mysqli->error;
+    echo "Parameter id tidak ditemukan";
 }
 
 // Tutup koneksi ke database
