@@ -1,14 +1,11 @@
 <?php
-// Pastikan ada koneksi ke database sebelumnya
-// Contoh koneksi menggunakan MySQLi
+
 $mysqli = new mysqli("localhost", "root", "", "pemrogramanWeb");
 
-// Cek koneksi
 if ($mysqli->connect_error) {
     die("Koneksi ke database gagal: " . $mysqli->connect_error);
 }
 
-// Ambil data dari form
 $id = $_POST['id'];
 $latitude = $_POST['latitude'];
 $longitude = $_POST['longitude'];
