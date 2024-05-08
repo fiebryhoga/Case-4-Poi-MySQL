@@ -20,6 +20,18 @@
         <div id="map" style="height: 80vh;"></div>
     </div>
 
+    <!-- Modal Konfirmasi -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <h2>Konfirmasi Hapus</h2>
+        <p>Apakah Anda yakin ingin menghapus POI ini?</p>
+        <div class="modal-buttons">
+            <button id="confirmButton">Ya</button>
+            <button id="cancelButton">Tidak</button>
+        </div>
+    </div>
+</div>
+
     <!-- Bootstrap JS -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <!-- Leaflet JS -->

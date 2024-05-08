@@ -90,69 +90,119 @@ $(document).ready(function () {
     });
   });
 
-// Fungsi untuk membuat string SVG bintang sesuai dengan rating
-function getRatingStars(rating) {
+  // Fungsi untuk membuat string SVG bintang sesuai dengan rating
+  function getRatingStars(rating) {
     var stars = "";
     var yellowStars = Math.floor(rating); // Jumlah bintang kuning
     var greyStars = 5 - yellowStars; // Jumlah bintang abu-abu
 
     // Tambahkan bintang kuning
     for (var i = 0; i < yellowStars; i++) {
-        stars += "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='gold'>" +
-                     "<path d='M12 2l3.09 6.26h6.31l-4.82 4.73 1.14 6.65L12 17.27l-5.72 3.37 1.14-6.65L2.6 8.26H8.9L12 2z'/>" +
-                 "</svg>";
+      stars +=
+        "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='gold'>" +
+        "<path d='M12 2l3.09 6.26h6.31l-4.82 4.73 1.14 6.65L12 17.27l-5.72 3.37 1.14-6.65L2.6 8.26H8.9L12 2z'/>" +
+        "</svg>";
     }
 
     // Tambahkan bintang abu-abu
     for (var j = 0; j < greyStars; j++) {
-        stars += "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='grey'>" +
-                     "<path d='M12 2l3.09 6.26h6.31l-4.82 4.73 1.14 6.65L12 17.27l-5.72 3.37 1.14-6.65L2.6 8.26H8.9L12 2z'/>" +
-                 "</svg>";
+      stars +=
+        "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='grey'>" +
+        "<path d='M12 2l3.09 6.26h6.31l-4.82 4.73 1.14 6.65L12 17.27l-5.72 3.37 1.14-6.65L2.6 8.26H8.9L12 2z'/>" +
+        "</svg>";
     }
 
     return stars;
-}
+  }
 
-// Fungsi untuk menampilkan popup saat hover pada marker
-function showPopupOnHover(marker, popupContent) {
+  // Fungsi untuk menampilkan popup saat hover pada marker
+  function showPopupOnHover(marker, popupContent) {
     marker.on("mouseover", function (e) {
-        this.openPopup();
+      this.openPopup();
     });
 
     marker.on("mouseout", function (e) {
-        this.closePopup();
+      this.closePopup();
     });
-}
+  }
 
-// Fungsi untuk memuat data POI dari server
-function loadPOI() {
+  // Fungsi untuk memuat data POI dari server
+  function loadPOI() {
     $.ajax({
-        url: "read_poi.php",
-        type: "GET",
-        dataType: "json",
-        success: function(data) {
-            // Loop melalui data POI dan tambahkan marker ke peta
-            $.each(data, function(index, poi) {
-                var marker = L.marker([poi.latitude, poi.longitude]).addTo(map);
-                
-                // Tampilkan pop up informasi dengan bintang sesuai rating
-                var popupContent = "<b>" + poi.nama + "</b><br>" +
-                                   "Description: " + poi.description + "<br>" +
-                                   "Rating: " + getRatingStars(poi.rating);
-                marker.bindPopup(popupContent);
-                
-                // Tampilkan popup saat hover pada marker
-                showPopupOnHover(marker, popupContent);
-            });
-        },
-        error: function(xhr, status, error) {
-            console.error(xhr.responseText);
-        }
+      url: "read_poi.php",
+      type: "GET",
+      dataType: "json",
+      success: function (data) {
+        // Loop melalui data POI dan tambahkan marker ke peta
+        $.each(data, function (index, poi) {
+          var marker = L.marker([poi.latitude, poi.longitude]).addTo(map);
+
+          // Tampilkan pop up informasi dengan bintang sesuai rating
+          var popupContent =
+            "<b>" +
+            poi.nama +
+            "</b><br>" +
+            "Description: " +
+            poi.description +
+            "<br>" +
+            "Rating: " +
+            getRatingStars(poi.rating);
+          marker.bindPopup(popupContent);
+
+          // Tampilkan popup saat hover pada marker
+          showPopupOnHover(marker, popupContent);
+        });
+      },
+      error: function (xhr, status, error) {
+        console.error(xhr.responseText);
+      },
     });
-}
+  }
 
-// Panggil fungsi loadPOI saat halaman dimuat
-loadPOI();
+  // Panggil fungsi loadPOI saat halaman dimuat
+  loadPOI();
 
+  /// Menyembunyikan modal saat dokumen dimuat
+  window.onload = function () {
+    document.getElementById("confirmModal").style.display = "none";
+  };
 
+  // Add contextmenu event listener to the marker
+  marker.on("contextmenu", function () {
+    // Tampilkan modal konfirmasi
+    document.getElementById("confirmModal").style.display = "block";
+
+    // Jika pengguna mengklik 'Ya', hapus marker
+    document.getElementById("confirmButton").onclick = function () {
+      // Mengirim data menggunakan Fetch API
+      fetch("delete.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: `id=${place.id}`,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Respon jaringan buruk");
+          }
+          return response.text();
+        })
+        .then((data) => {
+          console.log(data);
+          map.removeLayer(marker);
+        })
+        .catch((error) => {
+          console.error("Ada masalah dengan fetch :", error);
+        });
+
+      // Sembunyikan modal
+      document.getElementById("confirmModal").style.display = "none";
+    };
+
+    // Jika pengguna mengklik 'Tidak', sembunyikan modal
+    document.getElementById("cancelButton").onclick = function () {
+      document.getElementById("confirmModal").style.display = "none";
+    };
+  });
 });
