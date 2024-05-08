@@ -18,15 +18,17 @@ $category = $_POST['category'];
 $rating = $_POST['rating'];
 $contact = $_POST['contact'];
 
-// Query untuk mengupdate data POI dalam database
-$query = "UPDATE poi SET latitude='$latitude', longitude='$longitude', nama='$nama', description='$description', category='$category', rating='$rating', contact='$contact' WHERE id='$id'";
+$query = "UPDATE poi SET latitude=?, longitude=?, nama=?, description=?, category=?, rating=?, contact=? WHERE id=?";
+$stmt = $mysqli->prepare($query);
 
-// Eksekusi query
-if ($mysqli->query($query) === true) {
+$stmt->bind_param("ddsssssi", $latitude, $longitude, $nama, $description, $category, $rating, $contact, $id);
+
+if ($stmt->execute()) {
     echo "Data POI berhasil diupdate";
 } else {
     echo "Error: " . $query . "<br>" . $mysqli->error;
 }
 
-// Tutup koneksi ke database
+$stmt->close();
+
 $mysqli->close();

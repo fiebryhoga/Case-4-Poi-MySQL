@@ -1,25 +1,20 @@
 $(document).ready(function () {
   var map = L.map("map").setView([-6.2088, 106.8456], 12);
-  var newMarker = null; // Untuk menyimpan marker baru yang belum disimpan
-  var poiData = []; // Array untuk menyimpan data POI dari server
+  var newMarker = null;
+  var poiData = [];
 
-  // Tambahkan layer peta OSM
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   }).addTo(map);
 
-  // Tambahkan marker ke peta saat klik
   map.on("click", function (e) {
-    // Hapus marker sebelumnya yang belum disimpan (jika ada)
     if (newMarker) {
       map.removeLayer(newMarker);
     }
 
-    // Gambar marker baru
     newMarker = L.marker(e.latlng, { draggable: true }).addTo(map);
 
-    // Tampilkan popup untuk mengisi informasi POI
     var popup = L.popup().setLatLng(e.latlng).setContent(`
             <div class="popup-content">
                 <h4 class="mb-3">Tambah POI</h4>
@@ -55,12 +50,10 @@ $(document).ready(function () {
     newMarker.bindPopup(popup).openPopup();
   });
 
-  // Event delegation untuk tombol Batal
   $(document).on("click", "#cancelBtn", function () {
     map.removeLayer(newMarker);
   });
 
-  // Tombol Simpan - Kirim data melalui AJAX
   $(document).on("submit", "#poiForm", function (e) {
     e.preventDefault();
 
@@ -81,7 +74,7 @@ $(document).ready(function () {
       success: function (response) {
         console.log(response);
         map.removeLayer(newMarker);
-        loadPOI(); // Muat kembali data POI setelah menambahkan baru
+        loadPOI(); 
       },
       error: function (xhr, status, error) {
         console.error(xhr.responseText);
@@ -89,13 +82,11 @@ $(document).ready(function () {
     });
   });
 
-  // Fungsi untuk membuat string SVG bintang sesuai dengan rating
   function getRatingStars(rating) {
     var stars = "";
-    var yellowStars = Math.floor(rating); // Jumlah bintang kuning
-    var greyStars = 5 - yellowStars; // Jumlah bintang abu-abu
+    var yellowStars = Math.floor(rating);
+    var greyStars = 5 - yellowStars;
 
-    // Tambahkan bintang kuning
     for (var i = 0; i < yellowStars; i++) {
       stars +=
         "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='gold'>" +
@@ -103,7 +94,6 @@ $(document).ready(function () {
         "</svg>";
     }
 
-    // Tambahkan bintang abu-abu
     for (var j = 0; j < greyStars; j++) {
       stars +=
         "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='grey'>" +
@@ -114,7 +104,6 @@ $(document).ready(function () {
     return stars;
   }
 
-  // Fungsi untuk menampilkan popup saat hover pada marker
   function showPopupOnHover(marker, popupContent) {
     marker.on("mouseover", function (e) {
       this.openPopup();
@@ -127,28 +116,30 @@ $(document).ready(function () {
 
   
 
-  // Fungsi untuk memuat data POI dari server
   function loadPOI() {
     $.ajax({
       url: "read_poi.php",
       type: "GET",
       dataType: "json",
       success: function (data) {
-        poiData = data; // Simpan data POI ke dalam array poiData
-        console.log(poiData); // Tampilkan array poiData di konsol
-        // Hapus semua marker sebelum menambahkan marker baru
+        poiData = data; 
+        console.log(poiData); 
         map.eachLayer(function (layer) {
           if (layer instanceof L.Marker) {
             map.removeLayer(layer);
           }
         });
-        // Loop melalui data POI dan tambahkan marker ke peta
 
-        // Loop melalui data POI dan tambahkan marker ke peta
+
         $.each(poiData, function (index, poi) {
-          var marker = L.marker([poi.latitude, poi.longitude]).addTo(map);
-
-          // Tampilkan pop up informasi dengan bintang sesuai rating
+          var marker = L.marker([poi.latitude, poi.longitude], {
+            draggable: true,
+          }).addTo(map);
+          marker.poiId = poi.id; 
+          marker.on("dragend", function (e) {
+            var updatedLatLng = e.target.getLatLng();
+            showEditPopup(e.target, poi);
+          });
           var popupContent =
             "<b>" +
             poi.nama +
@@ -160,56 +151,41 @@ $(document).ready(function () {
             getRatingStars(poi.rating);
           marker.bindPopup(popupContent);
 
-          // Tampilkan popup saat hover pada marker
           showPopupOnHover(marker, popupContent);
 
-
-
-
-
-
-
-          
-          // Tambahkan event listener untuk klik kanan pada marker POI
           marker.on("contextmenu", function (e) {
-            e.originalEvent.preventDefault(); // Mencegah konteks menu bawaan muncul
-
-            // Buat elemen pop up konfirmasi dengan tombol
+            e.originalEvent.preventDefault(); 
             var popupConfirmation = document.createElement("div");
             popupConfirmation.classList.add("popup-confirmation");
             popupConfirmation.innerHTML = `
         <div class="popup-content">
-            <p>Apakah Anda yakin ingin menghapus POI ini?</p>
+            <p>Apakah Anda yakin ingin menghapus ${poi.nama}?</p>
             <button id="confirmDelete">Ya, hapus</button>
             <button id="cancelDelete">Batal</button>
         </div>
     `;
 
-            // Tambahkan pop up ke dalam body dokumen
             document.body.appendChild(popupConfirmation);
 
-            // Event listener untuk tombol "Batal"
             document
               .getElementById("cancelDelete")
               .addEventListener("click", function () {
-                document.body.removeChild(popupConfirmation); // Tutup pop up
+                document.body.removeChild(popupConfirmation); 
               });
 
-            // Event listener untuk tombol "Ya, hapus"
             document
               .getElementById("confirmDelete")
               .addEventListener("click", function () {
-                document.body.removeChild(popupConfirmation); // Tutup pop up
+                document.body.removeChild(popupConfirmation); 
 
-                // Kirim permintaan hapus ke server
                 $.ajax({
                   url: "delete_poi.php",
                   type: "POST",
-                  data: { id: poi.id }, // Kirim ID POI ke server
+                  data: { id: poi.id },
                   success: function (response) {
                     console.log(response);
                     if (response === "success") {
-                      map.removeLayer(marker); // Hapus marker dari peta setelah berhasil dihapus dari database
+                      map.removeLayer(marker); 
                       console.log("Delete berhasil.");
                     } else {
                       console.log("Delete gagal: " + response);
@@ -222,6 +198,85 @@ $(document).ready(function () {
                 });
               });
           });
+
+          marker.on("dragend", function (e) {
+            var poi = poiData.find((poi) => poi.id === e.target.poiId);
+            showEditPopup(e.target, poi);
+          });
+
+          function showEditPopup(marker, poi) {
+            newMarker = marker;
+
+            var popupEdit = L.popup().setLatLng(marker.getLatLng()).setContent(`
+        <div class="popup-content">
+            <h4 class="mb-3">Edit POI</h4>
+            <form id="editPoiForm">
+                <input type="hidden" id="editPoiId" value="${poi.id}">
+                <div class="form-group">
+                    <label for="editNama">Nama:</label>
+                    <input type="text" class="form-control" id="editNama" name="nama" value="${poi.nama}" required>
+                </div>
+                <div class="form-group">
+                    <label for="editDescription">Deskripsi:</label>
+                    <textarea class="form-control" id="editDescription" name="description" rows="3" required>${poi.description}</textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editCategory">Kategori:</label>
+                    <input type="text" class="form-control" id="editCategory" name="category" value="${poi.category}" required>
+                </div>
+                <div class="form-group">
+                    <label for="editRating">Rating:</label>
+                    <input type="number" class="form-control" id="editRating" name="rating" min="0" max="5" step="0.1" value="${poi.rating}" required>
+                </div>
+                <div class="form-group">
+                    <label for="editContact">Kontak:</label>
+                    <input type="text" class="form-control" id="editContact" name="contact" value="${poi.contact}">
+                </div>
+                <div class="form-group text-center">
+                    <button type="button" class="btn btn-danger mr-2" id="cancelEdit">Batal</button>
+                    <button type="button" class="btn btn-primary ml-2" id="updatePoi">Update</button>
+                </div>
+            </form>
+        </div>
+    `);
+
+            popupEdit.openOn(map);
+
+            $(document).on("click", "#cancelEdit", function () {
+              map.closePopup();
+            });
+
+            $(document).on("click", "#updatePoi", function () {
+              if (newMarker !== null) {
+                var updatedData = {
+                  id: $("#editPoiId").val(),
+                  nama: $("#editNama").val(),
+                  description: $("#editDescription").val(),
+                  category: $("#editCategory").val(),
+                  rating: $("#editRating").val(),
+                  contact: $("#editContact").val(),
+                  latitude: newMarker.getLatLng().lat.toFixed(8), // Ambil lokasi baru dari marker
+                  longitude: newMarker.getLatLng().lng.toFixed(8),
+                };
+
+                $.ajax({
+                  url: "update_poi.php",
+                  type: "POST",
+                  data: updatedData,
+                  success: function (response) {
+                    console.log(response);
+                    loadPOI();
+                    map.closePopup();
+                  },
+                  error: function (xhr, status, error) {
+                    console.error(xhr.responseText);
+                  },
+                });
+              } else {
+                console.error("newMarker is null");
+              }
+            });
+          }
         });
       },
       error: function (xhr, status, error) {
@@ -230,6 +285,5 @@ $(document).ready(function () {
     });
   }
 
-  // Panggil fungsi loadPOI saat halaman dimuat
   loadPOI();
 });
